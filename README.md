@@ -5,7 +5,7 @@ A Chrome side-panel extension for freelancers on **Fiverr** and **Upwork**. It r
 - **Fiverr gigs**: titles, tags, description, 3 packages, FAQ and an action plan
 - **Upwork Project Catalog listings**
 - **Upwork proposals**: an apply/skip verdict, a bid, opening lines and a cover letter
-- **Profile reports**: how your profile compares with 40+ freelancers in your field, with specific changes to make
+- **Profile reports**: how your profile compares with up to 25 freelancers in your field, with specific changes to make
 
 Everything it writes is based on data from real pages, and it never invents experience, reviews or numbers about you.
 
@@ -69,13 +69,15 @@ Fiverr / Upwork tab ──► page reader ──► side panel ──► your AI
 
 1. **Read.** The extension reads the data Fiverr and Upwork have already loaded into the page you opened. It doesn't scrape the page's layout.
 2. **Analyze.** Keyword, price and competition statistics are calculated in the extension itself (`keywords.js`, `jobs.js`, `profile.js`).
-3. **Study competitors.** When you click Generate, it opens the top competitor pages one at a time in background tabs. It reads each page, closes the tab, and waits between pages the way a person would. If a captcha appears, the tab comes to the front so you can solve it. **Stop** writes with whatever has been read so far.
+3. **Study competitors.** When you click Generate, it opens the top 15 competitor pages (25 profiles for profile research) one at a time in background tabs. It reads each page, closes the tab, and waits between pages the way a person would. If a captcha appears, the tab comes to the front so you can solve it. **Stop** writes with whatever has been read so far.
 4. **Write.** One AI call returns a structured result.
 5. **Check.** Code fixes tags, prices and title prefixes. Anything still breaking the platform's limits goes back to the AI once to be reworded.
 
 Pages it has already read are cached for 7 days, so "Generate again" doesn't read them twice.
 
 ## Privacy
+
+Full policy: [PRIVACY.md](PRIVACY.md)
 
 - Your API key and settings are stored **only in your browser** (`chrome.storage.local`).
 - Page data and your "About you" text are sent **only to the AI provider whose key you entered**, and only when you click an AI action.
@@ -108,9 +110,13 @@ jobs.js            Job market summary, job score, proposal schema
 profile.js         Profile aggregation, field comparison and report schema
 keywords.test.js   Tests
 lib/jspdf.umd.min.js   jsPDF, bundled for PDF export
+icons/              Extension icons (16, 32, 48, 128 px)
+PRIVACY.md          Privacy policy (linked from the Chrome Web Store listing)
+store/listing.md    Chrome Web Store listing text, ready to paste
+pack.sh             Builds the store upload zip into dist/
 ```
 
-No build step: the files run as they are.
+No build step: the files run as they are. `./pack.sh` checks the code, runs the tests and builds `dist/gig-spy-<version>.zip` for the Chrome Web Store.
 
 ## Tests
 
