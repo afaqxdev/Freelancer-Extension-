@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gig Spy</title>
+<style>
+  :root {
+    --bg: #f7f7f8; --card: #fff; --fg: #1f2024; --muted: #6b6e76; --line: #e6e7ea;
+    --accent: #1dbf73; --accent-ink: #fff; --accent-soft: #e8f8f0; --bad: #d93a3a; --bad-soft: #fdecec; --warn: #b7791f;
+    --radius: 10px; --shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #131416; --card: #1c1d20; --fg: #ececee; --muted: #9b9ea6; --line: #2c2e33; --accent-soft: #143524; --bad-soft: #3a1b1b; }
+  }
+  * { box-sizing: border-box; }
+  body { font: 13px/1.45 -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
+  header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 12px 0; }
+  .top { display: flex; align-items: center; gap: 8px; }
+  .brand { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  .brand i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .query { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .query:not(:empty) { background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; }
+  .icon-btn { background: none; border: 1px solid var(--line); color: var(--fg); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; }
+  .actions { display: flex; gap: 8px; margin: 10px 0 8px; }
+  button.primary, button.secondary { border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer; font-size: 13px; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border: 0; }
+  button.secondary { background: var(--card); color: var(--fg); border: 1px solid var(--line); }
+  button.small { padding: 3px 8px; font-size: 12px; font-weight: 500; }
+  button:disabled { opacity: .5; cursor: default; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .grow { flex: 1; }
+  #status { font-size: 12px; color: var(--muted); padding: 6px 0 4px; }
+  nav { display: flex; gap: 2px; }
+  nav button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 8px 2px; font-weight: 600; cursor: pointer; font-size: 12.5px; }
+  nav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  main { padding: 12px; }
+  section[hidden] { display: none; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .card h3 .grow + * { margin-left: auto; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 18px; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+  .chip small { color: var(--muted); margin-left: 4px; }
+  .muted { color: var(--muted); }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+  .comp { display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .comp:last-child { border-bottom: 0; }
+  .comp .rank { font-weight: 700; color: var(--muted); }
+  .comp a { color: var(--fg); text-decoration: none; font-weight: 500; }
+  .comp a:hover { text-decoration: underline; }
+  .comp.me { background: var(--accent-soft); border-radius: 8px; padding-left: 6px; }
+  .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--line); margin-left: 4px; }
+  .text { white-space: pre-wrap; }
+  .count { font-size: 11px; font-weight: 600; color: var(--accent); margin-left: auto; }
+  .count.over { color: var(--bad); }
+  .line { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .line:last-child { border-bottom: 0; }
+  .line .grow { min-width: 0; }
+  .pkgs { display: grid; gap: 8px; }
+  .pkg { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .pkg .price { font-size: 18px; font-weight: 700; }
+  .pkg ul, .card ul, .card ol { margin: 6px 0 0; padding-left: 18px; }
+  .issues { background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; }
+  .ok { background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; }
+  label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 8px; }
+  input, select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; margin-top: 4px; font-weight: 400; }
+  .empty { text-align: center; padding: 28px 12px; color: var(--muted); }
+  .empty b { display: block; color: var(--fg); font-size: 14px; margin-bottom: 4px; }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 20px); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .hero { border-left: 4px solid var(--accent); }
+  .hero.mid { border-left-color: #e3a008; } .hero.hard { border-left-color: var(--bad); }
+  .hero-top { display: flex; gap: 14px; align-items: center; }
+  .hero .headline { font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .gauge-wrap { flex: none; text-align: center; }
+  .gauge { --c: var(--accent); width: 68px; height: 68px; border-radius: 50%; display: grid; place-content: center; text-align: center;
+    background: radial-gradient(closest-side, var(--card) 78%, transparent 79%), conic-gradient(var(--c) calc(var(--v) * 1%), var(--line) 0); }
+  .hero.mid .gauge { --c: #e3a008; } .hero.hard .gauge { --c: var(--bad); }
+  .gauge b { font-size: 20px; line-height: 1; } .gauge span { font-size: 10px; color: var(--muted); }
+  .gauge-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+  .points { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; }
+  .points li { margin-bottom: 3px; }
+  button.chip { border: 0; color: var(--fg); font: inherit; font-size: 12px; cursor: pointer; transition: transform .1s, filter .15s; }
+  button.chip:hover { filter: brightness(.95); } button.chip:active { transform: scale(.96); }
+  .filters { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 4px; }
+  .filters input, .filters select { margin: 0; }
+  #steps, .steps { list-style: none; padding: 0; margin: 10px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; counter-reset: s; }
+  #steps li, .steps li { counter-increment: s; font-size: 11px; color: var(--muted); text-align: center; position: relative; padding-top: 26px; }
+  #steps li::before, .steps li::before { content: counter(s); position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-content: center; font-weight: 700; background: var(--card); }
+  #steps li.active, .steps li.active { color: var(--fg); font-weight: 600; } #steps li.active::before, .steps li.active::before { border-color: var(--accent); color: var(--accent); animation: pulse 1.4s infinite; }
+  #steps li.done::before, .steps li.done::before { content: '✓'; background: var(--accent); border-color: var(--accent); color: #fff; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 5px var(--accent-soft); } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .card ol li { margin-bottom: 8px; }
+  .warn { background: #fff7e6; color: #8a5a00; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; }
+  @media (prefers-color-scheme: dark) { .warn { background: #3a2c10; color: #f3c56b; } }
+  .warn ul { margin: 4px 0 0; padding-left: 18px; }
+  .report { display: grid; gap: 8px; }
+  .kw { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .kw:last-child { border-bottom: 0; }
+  .kw.me { background: var(--accent-soft); border-radius: 8px; padding-left: 6px; }
+  details.card > summary { cursor: pointer; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); list-style: none; }
+  details.card > summary::before { content: '▸ '; } details.card[open] > summary::before { content: '▾ '; }
+  details.card[open] > summary { margin-bottom: 8px; }
+  button.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 12px; padding: 0; margin: -2px 0 10px; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.cmp th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 3px; border-bottom: 1px solid var(--line); }
+  table.cmp td { padding: 5px 3px; border-bottom: 1px solid var(--line); }
+  table.cmp tr.ahead td:last-child { color: var(--accent); font-weight: 600; }
+  table.cmp tr.behind td:last-child { color: var(--bad); font-weight: 600; }
+  table.cmp tr.behind td:first-child { font-weight: 600; }
+  #crumb { font-size: 12px; font-weight: 600; padding-top: 6px; display: flex; gap: 6px; align-items: center; }
+  #crumb button { margin-left: auto; }
+  #crumb[hidden] { display: none; }
+  .choice { display: block; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; cursor: pointer; color: var(--fg); font: inherit; box-shadow: var(--shadow); }
+  .choice:hover { border-color: var(--accent); }
+  .choice b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .choice span { color: var(--muted); font-size: 12.5px; }
+  body.at-home nav, body.at-home #status, body.at-home main > section:not(#home):not(#settings), body.at-home #guide { display: none !important; }
+  body.guiding nav, body.guiding main > section:not(#settings):not(#home) { display: none !important; }
+  /* a setup step (key, or a platform's questions) is the only thing on screen */
+  body.setup nav, body.setup #status, body.setup #crumb, body.setup main > :not(#settings) { display: none !important; }
+  #settings [hidden] { display: none; }
+  .home-title { font-size: 17px; font-weight: 700; margin: 4px 0 12px; }
+  .kw-score { flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px; display: grid; place-content: center; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="top">
+      <div class="brand"><i></i>Gig Spy</div>
+      <div class="query" id="query" title="Current Fiverr search"></div>
+      <button class="icon-btn" id="homeBtn" title="Change task" aria-label="Change task">⌂</button>
+      <button class="icon-btn" id="analyze" title="Re-read this page" aria-label="Re-read this page">↻</button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙</button>
+    </div>
+    <div id="crumb" hidden></div>
+    <div id="status">Open a Fiverr search page.</div>
+    <nav role="tablist">
+      <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+      <button role="tab" data-tab="keywords">Keywords</button>
+      <button role="tab" data-tab="competitors">Competitors</button>
+      <button role="tab" data-tab="gig">My Gig ✦</button>
+      <button role="tab" data-tab="proposal" hidden>Proposal ✦</button>
+      <button role="tab" data-tab="profile" hidden>Profile ✦</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" hidden></section>
+    <div id="guide" hidden></div>
+    <section id="settings" class="card" hidden>
+      <h3 id="settingsTitle">Settings</h3>
+      <p id="settingsIntro" class="muted" hidden></p>
+      <!-- data-for: which setup step shows the field (key, fiverr, upwork) -->
+      <label data-for="key">AI key: Claude, ChatGPT or Gemini <span class="muted">(stays in this browser only)</span><input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-… · sk-… · AIza…" aria-describedby="keyHint"></label>
+      <div data-for="key" id="keyHint" class="muted" aria-live="polite"></div>
+      <label data-for="key">Model <span class="muted">(optional, leave empty for the default)</span><input id="aiModel" autocomplete="off"></label>
+      <label data-for="fiverr upwork">About you <span class="muted">(skills, tools, experience; the AI only uses these facts)</span><input id="about" autocomplete="off" placeholder="e.g. 4 yrs Flutter dev, Firebase, 20+ apps shipped"></label>
+      <label data-for="fiverr">Your Fiverr username <span class="muted">(finds your rank)</span><input id="username" autocomplete="off"></label>
+      <label data-for="fiverr">Your current gig title <span class="muted">(optional)</span><input id="myTitle" autocomplete="off"></label>
+      <label data-for="fiverr">Your Fiverr profile link <span class="muted">(for profile comparison)</span><input id="fiverrProfile" autocomplete="off" placeholder="https://www.fiverr.com/yourname"></label>
+      <label data-for="upwork">Your hourly rate in $ <span class="muted">(for Upwork job checks and bids)</span><input id="myRate" type="number" min="1" autocomplete="off"></label>
+      <label data-for="upwork">Your Upwork profile link <span class="muted">(for profile comparison and proposals)</span><input id="upworkProfile" autocomplete="off" placeholder="https://www.upwork.com/freelancers/~…"></label>
+      <div class="actions"><button class="primary" id="save">Save</button><button class="secondary" id="clearCache">Reset saved data…</button></div>
+    </section>
+
+    <section id="tab-overview"><div class="empty"><b>No data yet</b>Open a Fiverr search or an Upwork page; this panel reads it automatically.</div></section>
+    <section id="tab-keywords" hidden></section>
+    <section id="tab-competitors" hidden></section>
+    <section id="tab-gig" hidden>
+      <div class="card">
+        <h3 id="gigTitle">Generate my gig</h3>
+        <p class="muted" id="gigIntro" style="margin:0 0 10px">Reads the top 15 competitor gigs on this search, then writes your gig, opportunity report and action plan. First run ~3 min.</p>
+        <button class="primary" id="gigBtn" style="width:100%">Generate my gig</button>
+        <div id="progress" hidden style="margin-top:10px">
+          <ol id="steps"><li data-step="read">Read gigs</li><li data-step="write">Write gig</li><li data-step="check">Rule check</li><li data-step="done">Ready</li></ol>
+          <div class="bar"><div id="progressBar"></div></div>
+          <div class="meta" id="progressText"></div>
+          <button class="secondary small" id="stopBtn" hidden style="margin-top:6px">Stop reading &amp; write with what's collected</button>
+        </div>
+      </div>
+      <div id="gigOut"></div>
+    </section>
+    <section id="tab-proposal" hidden></section>
+    <section id="tab-profile" hidden></section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="lib/jspdf.umd.min.js"></script>
+  <script src="keywords.js"></script>
+  <script src="gig.js"></script>
+  <script src="profile.js"></script>
+  <script src="jobs.js"></script>
+  <script src="panel.js"></script>
+  <script src="views.js"></script>
+</body>
+</html>
